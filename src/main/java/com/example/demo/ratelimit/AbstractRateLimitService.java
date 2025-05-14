@@ -23,14 +23,25 @@ public abstract class AbstractRateLimitService<T extends RateLimitConfig> {
         if (rateLimitRecord == null) {
             rateLimitResult.setStatus(RateLimitStatus.FIRST);
             rateLimitRecordRepo.createNewRecord(
-                    requestData.getPath(),
-                    requestData.getMethod(),
-                    key,
-                    requestData.getIp(),
-                    requestData.getUserId()
+                    new RateLimitRecordImpl(
+                            requestData.getPath(),
+                            requestData.getMethod(),
+                            requestData.getIp(),
+                            requestData.getUserId(),
+                            1L,
+                            System.currentTimeMillis(),
+                            key,
+                            rateLimitConfig.getInterval()
+                    )
             );
             return rateLimitResult;
         }
+
+        if (rateLimitRecord.getIntervalRequestCount() < rateLimitConfig.getInterval()) {
+            rateLimitResult.setStatus(RateLimitStatus.ALLOWED);
+            return rateLimitResult;
+        }
+
 
         if (rateLimitRecord.getRequestCount() >= rateLimitConfig.getMaxRequests()) {
             rateLimitResult.setStatus(RateLimitStatus.BLOCKED);
@@ -40,17 +51,11 @@ public abstract class AbstractRateLimitService<T extends RateLimitConfig> {
         rateLimitResult = applyRateLimit(rateLimitRecord, rateLimitConfig);
 
         // TODO("make an abstract update method if this implementation is not sufficient")
-        updateRecord(rateLimitRecord, rateLimitResult);
+        updateRecord(rateLimitRecord, rateLimitResult, rateLimitConfig);
         return rateLimitResult;
     }
 
-    private void updateRecord(RateLimitRecord rateLimitRecord, RateLimitResult rateLimitResult) {
-        if (rateLimitResult.getStatus() == RateLimitStatus.LIMITED) {
-            rateLimitRecord.setRequestCount(rateLimitRecord.getRequestCount() + 1);
-        }
-        rateLimitRecord.setLastRequestTime(System.currentTimeMillis());
-        rateLimitRecordRepo.updateRecord(rateLimitRecord);
-    }
-
     public abstract RateLimitResult applyRateLimit(RateLimitRecord rateLimitRecord, RateLimitConfig rateLimitConfig);
+
+    public abstract void updateRecord(RateLimitRecord rateLimitRecord, RateLimitResult rateLimitResult, T rateLimitConfig);
 }

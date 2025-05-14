@@ -8,9 +8,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Entity
+@NoArgsConstructor
 @Table(name = "rate_limit_record")
 public class RateLimitRecordEntity implements RateLimitRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,4 +32,17 @@ public class RateLimitRecordEntity implements RateLimitRecord {
     private Long lastRequestTime;
     @Column(name = "key")
     private String key;
+    @Column(name = "interval_request_count")
+    private Long intervalRequestCount;
+
+    public RateLimitRecordEntity(RateLimitRecord record) {
+        this.path = record.getPath();
+        this.method = record.getMethod();
+        this.ip = record.getIp();
+        this.userId = record.getUserId();
+        this.requestCount = record.getRequestCount();
+        this.lastRequestTime = record.getLastRequestTime();
+        this.key = record.getKey();
+        this.intervalRequestCount = record.getIntervalRequestCount();
+    }
 }
