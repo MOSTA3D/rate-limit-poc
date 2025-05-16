@@ -22,8 +22,12 @@ class WaitRateLimitService extends AbstractRateLimitService<WaitRateLimitConfig>
         RateLimitResult rateLimitResult = new RateLimitResult();
         long currentTime = System.currentTimeMillis();
         long timeToWait = rateLimitRecord.getLastRequestTime() + ((WaitRateLimitConfig) rateLimitConfig).getTimeToWait() - currentTime;
+        if (timeToWait < 0 || rateLimitRecord.getIntervalRequestCount() < rateLimitConfig.getInterval()) {
+            rateLimitResult.setStatus(RateLimitStatus.ALLOWED);
+        } else {
+            rateLimitResult.setStatus(RateLimitStatus.LIMITED);
+        }
         rateLimitResult.setTimeToWait(timeToWait);
-        rateLimitResult.setStatus((timeToWait > 0) ? RateLimitStatus.LIMITED : RateLimitStatus.ALLOWED);
         return rateLimitResult;
     }
 
@@ -33,12 +37,11 @@ class WaitRateLimitService extends AbstractRateLimitService<WaitRateLimitConfig>
         if (rateLimitResult.getStatus() == RateLimitStatus.LIMITED) {
             rateLimitRecord.setRequestCount(rateLimitRecord.getRequestCount() + 1);
         }
-        if (
-                rateLimitResult.getStatus() == RateLimitStatus.ALLOWED &&
-                        currentTime > (rateLimitRecord.getLastRequestTime() + rateLimitRecord.getIntervalRequestCount() * rateLimitConfig.getTimeToWait())
-        ) {
+
+        if (rateLimitResult.getTimeToWait() < 0) {
             rateLimitRecord.setIntervalRequestCount(0L);
         }
+
         rateLimitRecord.setIntervalRequestCount(rateLimitRecord.getIntervalRequestCount() + 1);
         rateLimitRecord.setLastRequestTime(currentTime);
         rateLimitRecordRepo.updateRecord(rateLimitRecord);

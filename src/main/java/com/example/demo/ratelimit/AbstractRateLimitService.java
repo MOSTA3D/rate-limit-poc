@@ -31,17 +31,11 @@ public abstract class AbstractRateLimitService<T extends RateLimitConfig> {
                             1L,
                             System.currentTimeMillis(),
                             key,
-                            rateLimitConfig.getInterval()
+                            1L
                     )
             );
             return rateLimitResult;
         }
-
-        if (rateLimitRecord.getIntervalRequestCount() < rateLimitConfig.getInterval()) {
-            rateLimitResult.setStatus(RateLimitStatus.ALLOWED);
-            return rateLimitResult;
-        }
-
 
         if (rateLimitRecord.getRequestCount() >= rateLimitConfig.getMaxRequests()) {
             rateLimitResult.setStatus(RateLimitStatus.BLOCKED);
